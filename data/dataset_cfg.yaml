@@ -1,8 +1,8 @@
 thumos14:
   dataset_configs:
 
-    train_ft_path: /home/datasets/THUMOS14/I3D_video_level/Flow_Val_All
-    test_ft_path: /home/datasets/THUMOS14/I3D_video_level/Flow_Test_All
+    train_ft_path: ../data/Flow_Train_All
+    test_ft_path: ../data/Flow_Test_All
 
     train_dict_path: data/thumos14_train_prop_dict.pkl
     val_dict_path: data/thumos14_val_prop_dict.pkl

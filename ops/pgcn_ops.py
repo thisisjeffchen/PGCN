@@ -4,6 +4,8 @@ from torch.nn.init import xavier_uniform
 import math
 import numpy as np
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 class Identity(torch.nn.Module):
     def forward(self, input):
@@ -110,14 +112,14 @@ class STPPReorgainzed:
         assert scores.size(1) == self.feat_dim
         n_out = proposal_ticks.size(0)
 
-        out_act_scores = torch.zeros((n_out, self.act_len)).cuda()
+        out_act_scores = torch.zeros((n_out, self.act_len)).to(device)
         raw_act_scores = scores[:, self.act_slice]
 
-        out_comp_scores = torch.zeros((n_out, self.comp_len)).cuda()
+        out_comp_scores = torch.zeros((n_out, self.comp_len)).to(device)
         raw_comp_scores = scores[:, self.comp_slice]
 
         if self.with_regression:
-            out_reg_scores = torch.zeros((n_out, self.reg_len)).cuda()
+            out_reg_scores = torch.zeros((n_out, self.reg_len)).to(device)
             raw_reg_scores = scores[:, self.reg_slice]
         else:
             out_reg_scores = None
@@ -198,7 +200,9 @@ class OHEMHingeLoss(torch.autograd.Function):
         ctx.shape = pred.size()
         ctx.group_size = group_size
         ctx.num_group = losses.size(0)
-        return loss.cuda()
+        loss = loss.to(device)
+
+        return loss
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -210,7 +214,7 @@ class OHEMHingeLoss(torch.autograd.Function):
             for idx in ctx.loss_ind[group]:
                 loc = idx + group * ctx.group_size
                 grad_in[loc, labels[loc] - 1] = slopes[loc] * grad_output[0].cpu()
-        return grad_in.cuda(), None, None, None, None
+        return grad_in.to(device), None, None, None, None
 
 
 class CompletenessLoss(torch.nn.Module):

@@ -31,6 +31,7 @@ cudnn.benchmark = True
 pin_memory = True
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def main():
     global args, best_loss, writer, adj_num, logger
@@ -60,7 +61,9 @@ def main():
     """construct model"""
     model = PGCN(model_configs, graph_configs)
     policies = model.get_optim_policies()
-    model = torch.nn.DataParallel(model, device_ids=args.gpus).cuda()
+    if torch.cuda.is_available():
+      model = torch.nn.DataParallel(model, device_ids=args.gpus).to(device)
+    
 
     if args.resume:
         if os.path.isfile(args.resume):
@@ -97,9 +100,9 @@ def main():
         num_workers=args.workers, pin_memory=True)
 
     """loss and optimizer"""
-    activity_criterion = torch.nn.CrossEntropyLoss().cuda()
-    completeness_criterion = CompletenessLoss().cuda()
-    regression_criterion = ClassWiseRegressionLoss().cuda()
+    activity_criterion = torch.nn.CrossEntropyLoss().to(device)
+    completeness_criterion = CompletenessLoss().to(device)
+    regression_criterion = ClassWiseRegressionLoss().to(device)
 
     for group in policies:
         logger.info(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(

@@ -45,6 +45,8 @@ adj_num = graph_configs['adj_num']
 num_class = model_configs['num_class']
 
 gpu_list = args.gpus if args.gpus is not None else range(8)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 
 
@@ -118,7 +120,7 @@ def runner_func(dataset, state_dict, stats, gpu_id, index_queue, result_queue, i
     net.load_state_dict(state_dict)
     # net.prepare_test_fc()
     net.eval()
-    net.cuda()
+    net.to(device)
 
     while True:
         index = index_queue.get()
@@ -127,11 +129,11 @@ def runner_func(dataset, state_dict, stats, gpu_id, index_queue, result_queue, i
 
         # calculate scores
         n_out = prop_ticks.size(0)
-        act_scores = torch.zeros((n_out, num_class + 1)).cuda()
-        comp_scores = torch.zeros((n_out, num_class)).cuda()
+        act_scores = torch.zeros((n_out, num_class + 1)).to(device)
+        comp_scores = torch.zeros((n_out, num_class)).to(device)
 
         if not args.no_regression:
-            reg_scores = torch.zeros((n_out, num_class * 2)).cuda()
+            reg_scores = torch.zeros((n_out, num_class * 2)).to(device)
         else:
             reg_scores = None
 
@@ -154,8 +156,8 @@ def runner_func(dataset, state_dict, stats, gpu_id, index_queue, result_queue, i
                 act_ft = act_all_fts[selected_idx, :]
                 comp_ft = comp_all_fts[selected_idx, :]
 
-                act_batch_var = act_ft.unsqueeze(0).cuda()
-                comp_batch_var = comp_ft.unsqueeze(0).cuda()
+                act_batch_var = act_ft.unsqueeze(0).to(device)
+                comp_batch_var = comp_ft.unsqueeze(0).to(device)
 
                 act_scores[prop_idx, :], comp_scores[prop_idx, :], \
                 reg_scores[prop_idx, :] = net((act_batch_var, comp_batch_var), None, None, None)

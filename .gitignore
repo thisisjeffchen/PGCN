@@ -6,6 +6,7 @@ model_zoo/
 
 # local files
 *.pkl
+*.pyc
 
 # Distribution / packaging
 .Python

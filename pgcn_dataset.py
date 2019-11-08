@@ -15,6 +15,8 @@ import pickle
 import torch
 import math
 
+MAX_BYTES = 2**31 - 1
+
 
 class PGCNInstance:
 
@@ -183,8 +185,15 @@ class PGCNDataSet(data.Dataset):
         """pre-compute iou and distance among proposals"""
         if os.path.exists(self.prop_dict_path):
             construct_time = time.time()
-            # if "val" not in self.prop_dict_path:
-            dicts = pickle.load(open(self.prop_dict_path, "rb"))
+
+            #workaround for osx not able to load pkl greater than 4GB
+            input_size = os.path.getsize (self.prop_dict_path)
+            bytes_in = bytearray(0)
+
+            with open (self.prop_dict_path, "rb") as f_in:
+                for _ in range (0, input_size, MAX_BYTES):
+                    bytes_in += f_in.read (MAX_BYTES)
+            dicts = pickle.loads(bytes_in)
             print("Dict constructed. Time:{:.2f}".format(time.time() - construct_time))
             self.act_iou_dict, self.act_dis_dict, self.prop_dict = dicts[0], dicts[1], dicts[2]
         else:
@@ -198,7 +207,11 @@ class PGCNDataSet(data.Dataset):
                 self._prepare_iou_dict()
             print("Dict constructed. Time:{:.2f}".format(time.time() - construct_time))
 
-            pickle.dump([self.act_iou_dict, self.act_dis_dict, self.prop_dict], open(self.prop_dict_path, "wb"))
+            #workaround for OSX not able to handle 4GB+ pickle files
+            bytes_out = pickle.dumps ([self.act_iou_dict, self.act_dis_dict, self.prop_dict])
+            with open (self.prop_dict_path, "wb") as f_out:
+                for idx in range (0, len (bytes_out), MAX_BYTES):
+                    f_out.write(bytes_out[idx:idx + MAX_BYTES])
 
     def _prepare_iou_dict(self):
         pbar = tqdm(total=len(self.video_list))

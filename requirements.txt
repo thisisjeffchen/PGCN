@@ -5,3 +5,5 @@ terminaltables
 pandas
 scipy
 ruamel.yaml
+tensorboardX
+tqdm
